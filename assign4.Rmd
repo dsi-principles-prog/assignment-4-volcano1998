@@ -6,19 +6,71 @@ output: html_notebook
 
 For the regular expression exercises, try writing first using regular expressions directly, then try using rverbalexpressions. Provide the code for both. 
 
+```{r}
+library(lubridate)
+library(stringr)
+library(htmlwidgets)
+library(RVerbalExpressions)
+
+# install.packages("devtools")
+# devtools::install_github("VerbalExpressions/RVerbalExpressions")
+```
+
 # Part 1
 
 ## R4DS 16.4.5
 
 Create a vector of dates giving the first day of every month in the current year. 
 
+
+```{r generate first day}
+ymd("2019-01-01") + months(0:11)
+```
+
 Write a function that given your birthday (as a date), returns how old you are in years.
+```{r how old you are}
+get_age<-function(birthday){
+  as.numeric(today()-ymd(birthday))%/%365
+}
+get_age('1998-02-28')
+```
+
+
+
+
 
 Write a function that given your birthday, returns the day of the week you were born on. 
+
+
+```{r weekday}
+get_weekday<-function(birthday){
+  wday(ymd(birthday),label=T)
+  # weekdays(ymd(birthday))
+}
+
+get_weekday('1998-02-28')
+```
+
 
 ## R4DS 14.3.2.1
 
 Given the corpus of common words in stringr::words, create regular expressions that find all words that have seven letters or more. (Since this list is long, you might want to use the match argument to str_view() to show only the matching or non-matching words.)
+
+
+```{r import data}
+stringr::words
+```
+
+
+```{r more than 7}
+str_view(words, "\\w{7,}", match = TRUE)
+morethan7 <- rx() %>%
+  rx_word_char() %>%
+  rx_repeat_previous(7) %>%
+  rx_anything()
+morethan7
+str_view(words, morethan7, match = TRUE)
+```
 
 ## R4DS 14.3.3.1
 
@@ -26,9 +78,56 @@ Use str_detect to find all words that:
 
 That only contain consonants. (Hint: thinking about matching “not”-vowels.)
 
+```{r only consonants}
+words[str_detect(words, "^[^aeiou]+$") ]
+consonants_only <- rx() %>%
+  rx_start_of_line() %>%
+  rx_something_but("aeiou") %>%
+  rx_end_of_line()
+consonants_only
+words[str_detect(words, consonants_only) ]
+```
+
 Empirically verify the rule “i before e except after c”.
 
+
+```{r  “i before e except after c”}
+words[str_detect(words, "cie")]
+cie <- rx() %>%
+  rx_find("cie")
+cie
+words[str_detect(words, cie)]
+```
+*answer* The rule is not always true. "science" and "society" disobey the rule.
+
+
+
+
 Create a regular expression that will match telephone numbers as commonly written in the US. Split this up into multiple expressions as needed.
+
+
+```{r telephone number}
+tele <- rx() %>%
+  rx_start_of_line() %>%
+  rx_maybe("(") %>%
+  rx_digit() %>%
+  rx_repeat_previous(3) %>%
+  rx_maybe(")") %>%
+  rx_any_of(" .-") %>%
+  rx_digit() %>%
+  rx_repeat_previous(3) %>%
+  rx_any_of(" .-") %>%
+  rx_digit() %>%
+  rx_repeat_previous(4) %>%
+  rx_end_of_line() 
+tele
+phonenum <- c("(615) 397-0128","(615) 481.1536","(abc) 777 8888")
+phonenum[str_detect(phonenum, "^(\\()?[0-9]{3}(\\))?[ -\\.][0-9]{3}[ -\\.][0-9]{4}$")]
+phonenum[str_detect(phonenum, tele)]
+```
+
+
+
 
 # Part 2
 
