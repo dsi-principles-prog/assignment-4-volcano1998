@@ -1,0 +1,104 @@
+---
+title: "30-feature-engineering"
+output: html_notebook
+---
+
+4. Using best practices, write four functions which add engineered features to the dataset, including a description and rationale. Include a test to determine whether the features are working as intended. 
+
+
+*fun1*
+
+Since the  the absolute age is not so representative , what we want is how old the woman is when compared with the group,  we need function as below to do standarization.
+
+```{r  standarize_age}
+standarize_age<-function(df,col){
+  df %>% 
+    mutate(age_sd=({{col}}-mean({{col}},na.rm=T))/(var({{col}},na.rm=T))^.5) %>% 
+    select(age_sd,everything())
+}
+
+standarize_age(pima,age)
+```
+
+```{r check standarize_age}
+range(standarize_age(pima,age)$age_sd,na.rm=T)
+```
+
+*fun2*
+
+Since what matters is that compared to normal glucose concentration,how much deviation of one's glucose concentration is , we can standarize the glucose column.
+```{r standarize_glucose}
+standarize_glucose<-function(df,col){
+  df %>% 
+    mutate(glucose_sd=({{col}}-mean({{col}},na.rm=T))/(var({{col}},na.rm=T))^.5)%>% 
+    select(glucose_sd,everything())
+}
+
+standarize_glucose(pima,glucose)
+```
+
+
+```{r  check standarize_glucose}
+range(standarize_glucose(pima,glucose)$glucose_sd,na.rm=T)
+```
+
+*fun3*
+Since the times of pregnant has some correlation with the age, the frequency of being pregnant since  sexually mature  is more sensible to describe women's  health status.
+
+We assume that the youngest age to be pregnant is 15. If a woman have been pregnant for 4 times and her age is 25,then the pregnant frequency is  4/(25-15)=0.4 times/year.
+Let's create a function to calculate the pregnant frequency.
+
+```{r  preg_frequency}
+preg_frequency<-function(df,preg){
+  df %>% 
+    mutate(preg_freq={{preg}}/(age-15))%>% 
+    select(preg_freq,everything())
+}
+
+
+preg_frequency(pima,pregnant)
+```
+
+
+Because the pregnant frquency should be in the range of (0,1) in the common sense, so we do the assertion as below.
+```{r  preg_frequency check}
+pima %>% 
+  preg_frequency(pregnant) %>% 
+  assert(within_bounds(0,1))
+```
+
+
+*fun4*
+the 'pedigree' is a variable to describe the possibility of onset of diabetes,and we want it to be more intuitive and direct to show the predicting possibility, so we can normalize it.
+
+```{r normalize_pedigree}
+normalize_ped<-function(df,pred){
+  df %>% 
+    mutate(pedigree_nz=({{pred}}-min({{pred}}))/(max({{pred}})-min({{pred}})))%>% 
+    select(pedigree_nz,everything())
+}
+
+normalize_ped(pima,pedigree)
+```
+
+
+
+The outcome of normalization should be in range of [0,1], let's check it as follows.
+```{r check normalize_pedigree}
+pima %>% 
+  normalize_ped(pedigree) %>% 
+  assert(within_bounds(0,1))
+```
+
+5. Prepare the data for modeling
+
+```{r}
+pima_1<-pima %>% 
+  standarize_age(age) %>% 
+  standarize_glucose(glucose) %>% 
+  preg_frequency(pregnant) %>% 
+  normalize_ped(pedigree)
+```
+
+
+

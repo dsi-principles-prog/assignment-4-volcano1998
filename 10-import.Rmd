@@ -1,0 +1,103 @@
+---
+title: "10-import"
+output: html_notebook
+---
+
+# Part 2
+
+
+Choose a dataset (this can be the same dataset as the last assignment, or a new one). Define a predictive modeling problem. Create the appropriate files and notebooks to do the following:
+
+1. Describe the data and the problem
+
+
+The population for this study was the Pima Indian population near Phoenix, Arizona. The population has been under continuous study since 1965 by the National Institute of Diabetes and Digestive and Kidney Diseases because of its high incidence rate of diabetes.This dataset describes the medical records for Pima Indians and whether or not each patient will have an onset of diabetes within five years.
+
+Fields description is as follows:
+
+pregnant = Number of times pregnant
+
+glucos = Plasma glucose concentration a 2 hours in an oral glucose tolerance test
+
+pressure = Diastolic blood pressure (mm Hg)
+
+triceps = Triceps skin fold thickness (mm)
+
+insulin = 2-Hour serum insulin (mu U/ml)
+
+mass = Body mass index (weight in kg/(height in m)^2)
+
+pedigree = Diabetes pedigree function
+
+age = Age (years)
+
+diabetes = Class variable (pos:tested positive for diabetes, neg: tested negative for diabetes)
+
+
+*problem*  
+How can we predict whether someone  will have an onset of diabetes within five years ?
+
+
+
+```{r library packages}
+library(readr)
+library(tidyverse)
+library(dplyr)
+library(assertthat)
+library(assertr)
+library(glue)
+```
+
+2. Read in and check data
+
+
+
+```{r import data}
+pima<- read_csv("data/PimaIndiansDiabetes2.csv")
+```
+
+
+We know that the time of pregnant , age should be no less than 0 and the age usually is less than 150,so we do the verification as below.
+```{r  verify bound}
+pima %>% 
+  verify(pregnant>=0) %>% 
+  verify(0< age & age<150) 
+```
+
+
+We know the outcome of diabetes test should be either 'positive' or 'negative', so we do the assertion as below.
+```{r check 'diabetes'}
+pima %>% 
+  assert(in_set('pos','neg'),diabetes)
+```
+
+
+Then, let's test if there are  missing value in the columns.
+```{r check missing value}
+pima%>% 
+  assert(not_na,names(diabetes))
+```
+We can see that 5 columns  have missing value in them.
+
+2. Clean up the data. 
+
+
+
+We can transform variable of `diabetes` to factor type , labeling 'pos' as 1 and 'neg' as 0.
+
+```{r numericalize}
+pima$diabetes<-factor(pima$diabetes,labels=c(0,1))
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
