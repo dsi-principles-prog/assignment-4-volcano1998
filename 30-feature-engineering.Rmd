@@ -97,7 +97,7 @@ normalize_ped(pima,pedigree)
 
 5. Prepare the data for modeling
 
-```{r}
+```{r  prepare for modeling}
 pima_1<-pima %>% 
   standarize_age(age) %>% 
   abnormal_glucose(glucose) %>% 
