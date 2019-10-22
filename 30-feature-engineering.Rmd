@@ -6,7 +6,7 @@ output: html_notebook
 4. Using best practices, write four functions which add engineered features to the dataset, including a description and rationale. Include a test to determine whether the features are working as intended. 
 
 
-*fun1*
+*function1*
 
 Since the  the absolute age is not so representative , what we want is how old the woman is when compared with the group,  we need function as below to do standarization.
 
@@ -23,59 +23,69 @@ standarize_age(pima,age)
 ```{r check standarize_age}
 range(standarize_age(pima,age)$age_sd,na.rm=T)
 ```
+We can see the range of the new column is (-1.040871,4.061069). There is value below 0, which means the standarization works.
 
-*fun2*
 
-Since what matters is that compared to normal glucose concentration,how much deviation of one's glucose concentration is , we can standarize the glucose column.
-```{r standarize_glucose}
-standarize_glucose<-function(df,col){
+
+
+
+
+*function2*
+For healthy people, the concentration of glucose is in the range of (70~125)mg/dl.
+Since what matters is whether glucose concentration is in normal range and how much it is 'abnormal'. So if the glucose concentration is in normal range, we mark it as 0. If it is out of range, we marke it as how much it is away from the range.  For detailed information you can refer to the function below.
+
+```{r abnormal_glucose}
+abnormal_glucose<-function(df,col){
   df %>% 
-    mutate(glucose_sd=({{col}}-mean({{col}},na.rm=T))/(var({{col}},na.rm=T))^.5)%>% 
-    select(glucose_sd,everything())
+    mutate(glucose_dev=case_when(
+      {{col}}<70~{{col}}-70,
+      {{col}}>125~{{col}}-125,
+      T~0
+    ))%>% 
+    select(glucose_dev,everything()) 
 }
 
-standarize_glucose(pima,glucose)
+abnormal_glucose(pima,glucose)
 ```
 
 
-```{r  check standarize_glucose}
-range(standarize_glucose(pima,glucose)$glucose_sd,na.rm=T)
+```{r  check abnormal_glucose}
+range(abnormal_glucose(pima,glucose)$glucose_dev,na.rm=T)
 ```
+The range of glucose deviation can be from -26 to 74, which means low and high blood glucoese concentration respectively.  The `abnormal-gluse` function works well.
 
-*fun3*
+
+
+*function3*
 Since the times of pregnant has some correlation with the age, the frequency of being pregnant since  sexually mature  is more sensible to describe women's  health status.
 
 We assume that the youngest age to be pregnant is 15. If a woman have been pregnant for 4 times and her age is 25,then the pregnant frequency is  4/(25-15)=0.4 times/year.
 Let's create a function to calculate the pregnant frequency.
 
 ```{r  preg_frequency}
-preg_frequency<-function(df,preg){
-  df %>% 
-    mutate(preg_freq={{preg}}/(age-15))%>% 
-    select(preg_freq,everything())
+preg_frequency <- function(df, preg) {
+  df %>%
+    mutate(preg_freq = {
+      {
+        preg
+      }
+    } / (age - 15)) %>%
+    select(preg_freq, everything()) %>% 
+    assert(within_bounds(0, 1))# the pregnant frquency should be in the range of (0,1) in the common sense
 }
-
 
 preg_frequency(pima,pregnant)
 ```
 
-
-Because the pregnant frquency should be in the range of (0,1) in the common sense, so we do the assertion as below.
-```{r  preg_frequency check}
-pima %>% 
-  preg_frequency(pregnant) %>% 
-  assert(within_bounds(0,1))
-```
-
-
-*fun4*
+*function4*
 the 'pedigree' is a variable to describe the possibility of onset of diabetes,and we want it to be more intuitive and direct to show the predicting possibility, so we can normalize it.
 
 ```{r normalize_pedigree}
 normalize_ped<-function(df,pred){
   df %>% 
     mutate(pedigree_nz=({{pred}}-min({{pred}}))/(max({{pred}})-min({{pred}})))%>% 
-    select(pedigree_nz,everything())
+    select(pedigree_nz,everything()) %>% 
+    assert(within_bounds(0,1)) #The outcome of normalization should be in range of [0,1],
 }
 
 normalize_ped(pima,pedigree)
@@ -83,19 +93,14 @@ normalize_ped(pima,pedigree)
 
 
 
-The outcome of normalization should be in range of [0,1], let's check it as follows.
-```{r check normalize_pedigree}
-pima %>% 
-  normalize_ped(pedigree) %>% 
-  assert(within_bounds(0,1))
-```
+
 
 5. Prepare the data for modeling
 
 ```{r}
 pima_1<-pima %>% 
   standarize_age(age) %>% 
-  standarize_glucose(glucose) %>% 
+  abnormal_glucose(glucose) %>% 
   preg_frequency(pregnant) %>% 
   normalize_ped(pedigree)
 ```
